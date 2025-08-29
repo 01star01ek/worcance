@@ -235,10 +235,17 @@ const ChuncheonTourismMap = () => {
         
         const parsed = Papa.parse(csvContent, {
           header: true,
-          dynamicTyping: false, // 문자열로 유지하여 안전하게 처리
+          dynamicTyping: false,
           skipEmptyLines: true,
           delimiter: ',',
-          encoding: 'utf8'
+          encoding: 'euc-kr', // 한글 인코딩 처리
+          transform: (value) => {
+            // 빈 값이나 특수문자 처리
+            if (typeof value === 'string') {
+              return value.trim();
+            }
+            return value;
+          }
         });
 
         const dataType = getDataType(fileName);
