@@ -47,32 +47,6 @@ const sampleData = {
       lng: 127.7340,
       description: '춘천의 대표 관광지들을 하루에 둘러볼 수 있는 테마 코스'
     }
-  ],
-  숙박업소: [
-    {
-      id: 5,
-      type: '숙박업소',
-      name: '춘천호텔',
-      category: '호텔',
-      address: '강원특별자치도 춘천시 공지로 456',
-      lat: 37.8800,
-      lng: 127.7320,
-      description: '춘천 중심가의 편리한 숙박시설'
-    }
-  ],
-  모범음식점: [
-    {
-      id: 6,
-      type: '모범음식점',
-      name: '소양강가든',
-      category: '한식',
-      mainMenu: '닭갈비',
-      price: '12000원',
-      address: '강원특별자치도 춘천시 소양로 789',
-      lat: 37.8770,
-      lng: 127.7280,
-      description: '춘천 닭갈비 원조 맛집'
-    }
   ]
 };
 
@@ -94,7 +68,6 @@ const ChuncheonTourismMap = () => {
   const mapRef = useRef(null);
   const [map, setMap] = useState(null);
   const [markers, setMarkers] = useState([]);
-  const [infoWindow, setInfoWindow] = useState(null);
 
   // CSV 데이터 로드 함수
   const loadCSVData = async () => {
@@ -102,6 +75,7 @@ const ChuncheonTourismMap = () => {
     
     // 가능한 파일명 패턴들
     const possibleFileNames = [
+      // 원본 패턴
       '강원특별자치도 춘천시_착한가격업소.csv',
       '강원특별자치도 춘천시_숙박업소.csv', 
       '강원특별자치도 춘천시_모범음식점.csv',
@@ -109,6 +83,15 @@ const ChuncheonTourismMap = () => {
       '강원특별자치도 춘천시_스마트도서관.csv',
       '강원특별자치도 춘천시_테마투어.csv',
       '강원특별자치도 춘천시_스탬프투어명소.csv',
+      // 언더스코어로 연결된 패턴
+      '강원특별자치도_춘천시_착한가격업소.csv',
+      '강원특별자치도_춘천시_숙박업소.csv',
+      '강원특별자치도_춘천시_모범음식점.csv',
+      '강원특별자치도_춘천시_요식업소.csv',
+      '강원특별자치도_춘천시_스마트도서관.csv',
+      '강원특별자치도_춘천시_테마투어.csv',
+      '강원특별자치도_춘천시_스탬프투어명소.csv',
+      // 간단한 패턴
       '착한가격업소.csv',
       '숙박업소.csv',
       '모범음식점.csv',
@@ -157,6 +140,7 @@ const ChuncheonTourismMap = () => {
         if (dataType && parsed.data.length > 0) {
           // 데이터 정규화
           newData[dataType] = parsed.data.map((item, index) => {
+            // 좌표 파싱
             const lat = parseFloat(item['위도']) || parseFloat(item['lat']) || null;
             const lng = parseFloat(item['경도']) || parseFloat(item['lng']) || null;
             
@@ -181,119 +165,94 @@ const ChuncheonTourismMap = () => {
               winterClose: item['동절기개방종료시간'] || item['winterClose'],
               closedDays: item['휴관일'] || item['closedDays']
             };
-          }).filter(item => item.lat && item.lng && !isNaN(item.lat) && !isNaN(item.lng));
+          }).filter(item => item.lat && item.lng && !isNaN(item.lat) && !isNaN(item.lng)); // 유효한 좌표만
 
           console.log(`Processed ${newData[dataType].length} items from ${fileName}`);
           loadedCount++;
         }
       } catch (error) {
+        // 파일이 없거나 읽기 실패 - 조용히 무시
         continue;
       }
     }
 
     if (loadedCount > 0) {
       console.log(`Successfully loaded ${loadedCount} CSV files`);
+      setTourismData(newData);
     } else {
       console.log('No CSV files found, using sample data');
+      // 샘플 데이터에 더 많은 예시 추가
+      const extendedSampleData = {
+        ...sampleData,
+        착한가격업소: [
+          ...sampleData.착한가격업소,
+          {
+            id: 4,
+            type: '착한가격업소',
+            name: '춘천막국수',
+            category: '한식_일반',
+            mainMenu: '막국수',
+            price: '7000원',
+            address: '강원특별자치도 춘천시 중앙로 123',
+            lat: 37.8750,
+            lng: 127.7290,
+            description: '춘천 대표 막국수 맛집'
+          }
+        ],
+        숙박업소: [
+          {
+            id: 5,
+            type: '숙박업소',
+            name: '춘천호텔',
+            category: '호텔',
+            address: '강원특별자치도 춘천시 공지로 456',
+            lat: 37.8800,
+            lng: 127.7320,
+            description: '춘천 중심가의 편리한 숙박시설'
+          }
+        ],
+        모범음식점: [
+          {
+            id: 6,
+            type: '모범음식점',
+            name: '소양강가든',
+            category: '한식',
+            mainMenu: '닭갈비',
+            price: '12000원',
+            address: '강원특별자치도 춘천시 소양로 789',
+            lat: 37.8770,
+            lng: 127.7280,
+            description: '춘천 닭갈비 원조 맛집'
+          }
+        ]
+      };
+      setTourismData(extendedSampleData);
     }
     
-    setTourismData(newData);
     setLoading(false);
   };
 
-  // 구글 맵 초기화
-  useEffect(() => {
-    const initializeGoogleMap = () => {
-      if (!window.google) {
-        console.log('Google Maps API not loaded yet');
-        return;
-      }
-
-      const mapOptions = {
-        center: { lat: 37.8813, lng: 127.7300 }, // 춘천시 중심
-        zoom: 12,
-        mapTypeId: 'roadmap'
-      };
-
-      const googleMap = new window.google.maps.Map(mapRef.current, mapOptions);
-      const googleInfoWindow = new window.google.maps.InfoWindow();
-      
-      setMap(googleMap);
-      setInfoWindow(googleInfoWindow);
-    };
-
-    // Google Maps API 로드
-    if (!window.google) {
-      const script = document.createElement('script');
-      script.async = true;
-      script.defer = true;
-      // 실제 프로젝트에서는 본인의 Google Maps API 키를 사용하세요
-      script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_API_KEY&callback=initMap`;
-      
-      // 콜백 함수를 전역으로 설정
-      window.initMap = initializeGoogleMap;
-      
-      script.onerror = () => {
-        console.error('Google Maps API failed to load');
-        // API 키 없이도 작동하도록 대체 방법
-        initializeMapWithoutAPI();
-      };
-      
-      document.head.appendChild(script);
-    } else {
-      initializeGoogleMap();
-    }
-  }, []);
-
-  // API 키 없이도 작동하는 대체 맵
-  const initializeMapWithoutAPI = () => {
-    if (mapRef.current) {
-      mapRef.current.innerHTML = `
-        <div style="
-          width: 100%; 
-          height: 100%; 
-          background: linear-gradient(45deg, #e3f2fd, #bbdefb);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          font-family: Arial, sans-serif;
-        ">
-          <div style="
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 400px;
-            margin: 20px;
-          ">
-            <h3 style="color: #1976d2; margin-bottom: 15px;">🗺️ 춘천시 관광지도</h3>
-            <p style="color: #666; line-height: 1.5; margin-bottom: 15px;">
-              Google Maps API 키가 필요합니다.<br>
-              현재는 샘플 데이터로 동작합니다.
-            </p>
-            <div style="
-              background: #f5f5f5;
-              padding: 10px;
-              border-radius: 5px;
-              font-size: 12px;
-              color: #777;
-            ">
-              좌측 사이드바에서 관광지 정보를 확인하세요!
-            </div>
-          </div>
-        </div>
-      `;
-      
-      // 가짜 맵 객체 설정 (마커 업데이트가 동작하도록)
-      setMap({ fake: true });
-    }
-  };
-
-  // 컴포넌트 마운트 시 CSV 데이터 로드
+  // 컴포넌트 마운트 시 CSV 데이터 로드 시도
   useEffect(() => {
     loadCSVData();
+  }, []);
+
+  // 지도 초기화
+  useEffect(() => {
+    if (!window.kakao || !window.kakao.maps) {
+      // Kakao Maps API 로드
+      const script = document.createElement('script');
+      script.async = true;
+      script.src = '//dapi.kakao.com/v2/maps/sdk.js?appkey=04ff5f4f67ecce60ecc682665031e783&autoload=false';
+      script.onload = () => {
+        window.kakao.maps.load(() => {
+          initializeMap();
+        });
+      };
+      document.head.appendChild(script);
+    } else {
+      initializeMap();
+    }
   }, []);
 
   // 마커 업데이트
@@ -303,8 +262,19 @@ const ChuncheonTourismMap = () => {
     }
   }, [selectedTypes, map, tourismData, loading]);
 
+  const initializeMap = () => {
+    const container = mapRef.current;
+    const options = {
+      center: new window.kakao.maps.LatLng(37.8813, 127.7300), // 춘천시 중심
+      level: 8
+    };
+
+    const kakaoMap = new window.kakao.maps.Map(container, options);
+    setMap(kakaoMap);
+  };
+
   const updateMarkers = () => {
-    if (!map || map.fake) return; // 가짜 맵인 경우 마커 생성 안함
+    if (!map) return;
 
     // 기존 마커 제거
     markers.forEach(marker => marker.setMap(null));
@@ -322,35 +292,25 @@ const ChuncheonTourismMap = () => {
     // 마커 생성
     allData.forEach(item => {
       if (item.lat && item.lng && !isNaN(item.lat) && !isNaN(item.lng)) {
-        const marker = new window.google.maps.Marker({
-          position: { lat: item.lat, lng: item.lng },
-          map: map,
-          title: item.name,
-          icon: {
-            path: window.google.maps.SymbolPath.CIRCLE,
-            scale: 8,
-            fillColor: getTypeColor(item.type),
-            fillOpacity: 0.8,
-            strokeColor: 'white',
-            strokeWeight: 2
-          }
+        const position = new window.kakao.maps.LatLng(item.lat, item.lng);
+        
+        // 마커 이미지 생성 (타입별로 다른 색상)
+        const markerImageSrc = createMarkerIcon(item.type);
+        const markerImage = new window.kakao.maps.MarkerImage(
+          markerImageSrc,
+          new window.kakao.maps.Size(24, 35),
+          { offset: new window.kakao.maps.Point(12, 35) }
+        );
+        
+        const marker = new window.kakao.maps.Marker({
+          position,
+          map,
+          image: markerImage
         });
 
         // 마커 클릭 이벤트
-        marker.addListener('click', () => {
+        window.kakao.maps.event.addListener(marker, 'click', () => {
           setSelectedMarker(item);
-          
-          // 정보창 표시
-          const infoContent = `
-            <div style="padding: 10px; max-width: 200px;">
-              <h4 style="margin: 0 0 8px 0; color: #333;">${item.name}</h4>
-              <p style="margin: 0; font-size: 12px; color: #666;">${item.address || ''}</p>
-              ${item.price ? `<p style="margin: 5px 0 0 0; color: #e74c3c; font-weight: bold;">${item.price}</p>` : ''}
-            </div>
-          `;
-          
-          infoWindow.setContent(infoContent);
-          infoWindow.open(map, marker);
         });
 
         newMarkers.push(marker);
@@ -358,6 +318,45 @@ const ChuncheonTourismMap = () => {
     });
 
     setMarkers(newMarkers);
+    
+    // 로딩 상태에서 메시지 표시
+    if (loading && allData.length === 0) {
+      console.log('데이터를 로드하는 중...');
+    } else if (allData.length === 0) {
+      console.log('표시할 데이터가 없습니다.');
+    }
+  };
+
+  // 마커 아이콘 생성 함수
+  const createMarkerIcon = (type) => {
+    const color = getTypeColor(type);
+    const canvas = document.createElement('canvas');
+    canvas.width = 24;
+    canvas.height = 35;
+    const ctx = canvas.getContext('2d');
+    
+    // 마커 모양 그리기
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(12, 12, 10, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 아래 삼각형
+    ctx.beginPath();
+    ctx.moveTo(12, 22);
+    ctx.lineTo(7, 30);
+    ctx.lineTo(17, 30);
+    ctx.closePath();
+    ctx.fill();
+    
+    // 흰색 테두리
+    ctx.strokeStyle = 'white';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(12, 12, 10, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    return canvas.toDataURL();
   };
 
   const handleTypeToggle = (type) => {
