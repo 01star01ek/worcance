@@ -179,7 +179,10 @@ const ChuncheonTourismMap = () => {
     setLoading(true);
     
     const possibleFileNames = [
-      '강원특별자치도 춘천시_착한가격업소.csv',
+      'test.csv', // 테스트용
+      '착한가격업소.csv',
+      '숙박업소.csv',
+      '모범음식점.csv',
       '강원특별자치도 춘천시_숙박업소.csv', 
       '강원특별자치도 춘천시_모범음식점.csv',
       '강원특별자치도 춘천시_요식업소.csv',
@@ -272,9 +275,11 @@ const ChuncheonTourismMap = () => {
 
     if (loadedCount > 0) {
       console.log(`Successfully loaded ${loadedCount} CSV files`);
+      console.log('Final data:', newData); // 디버깅용
       setTourismData(newData);
     } else {
       console.log('No CSV files found, using empty data');
+      console.log('Attempted file names:', possibleFileNames); // 디버깅용
     }
     
     setLoading(false);
